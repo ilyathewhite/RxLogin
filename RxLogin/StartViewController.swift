@@ -10,43 +10,46 @@ import UIKit
 import RxSwift
 import RxCocoa
 
-class StartViewController: UIViewController {
-   private var startModel: StartModel!
+class StartViewController: UIViewController, StartModelDelegate, LoginViewControllerDelegate {
+   private var startModel = StartModel()
 
    @IBOutlet var titleLabel: UILabel!
    @IBOutlet var startButton: UIButton!
    
    override func viewDidLoad() {
       super.viewDidLoad()
-      
-      startModel = StartModel()
-      
-      // titleLabel.text
-      startModel.title.asDriver()
-         .drive(titleLabel.rx.text)
-         .disposed(by: startModel.disposeBag)
+      startModel.delegate = self
+   }
+   
+   // from model to view
 
-      // tap action
-      startButton.rx.tap.asDriver()
-         .drive(
-            onNext: { [unowned self] _ in
-               let loginVC = LoginViewController()
-               loginVC.loadViewIfNeeded() // to load the login model
-               let loginModel = loginVC.loginModel!
-               
-               self.startModel.startLogin(with: loginModel)
-               self.present(loginVC, animated: true, completion: nil)
-               
-               // dismiss the login screen shortly after the user logs in
-               loginModel.didFinishLogin.asObservable()
-                  .delay(1.0, scheduler: MainScheduler.instance)
-                  .subscribe(
-                     onCompleted: { [unowned self] _ in
-                        self.dismiss(animated: true, completion: nil)
-                  })
-                  .disposed(by: loginModel.disposeBag)
-            }
-         )
-         .disposed(by: startModel.disposeBag)
+   func didLogin(model: StartModel) {
+      titleLabel.text = model.title
+   }
+   
+   func didReset(model: StartModel) {
+      titleLabel.text = model.title
+   }
+   
+   // from view to model
+   
+   @IBAction func startLogin(sender: UIButton) {
+      startModel.reset()
+      let loginVC = LoginViewController()
+      loginVC.delegate = self
+      present(loginVC, animated: true, completion: nil)
+   }
+   
+   // LoginViewControllerDelegate
+   
+   func didLogin(controller: LoginViewController, loginToken: String) {
+      startModel.didLogin(with: loginToken)
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+         self.close(controller: controller)
+      }
+   }
+   
+   func close(controller: LoginViewController) {
+      controller.dismiss(animated: true, completion: nil)
    }
 }

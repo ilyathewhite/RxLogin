@@ -10,8 +10,14 @@ import UIKit
 import RxSwift
 import RxCocoa
 
-class LoginViewController: UIViewController {
-   var loginModel: LoginModel!
+protocol LoginViewControllerDelegate: class {
+   func didLogin(controller: LoginViewController, loginToken: String)
+   func close(controller: LoginViewController)
+}
+
+class LoginViewController: UIViewController, LoginModelDelegate {
+   var loginModel = LoginModel()
+   weak var delegate: LoginViewControllerDelegate?
    
    @IBOutlet var usernameField: UITextField!
    @IBOutlet var passwordField: UITextField!
@@ -23,45 +29,61 @@ class LoginViewController: UIViewController {
    override func viewDidLoad() {
       super.viewDidLoad()
       
-      loginModel = LoginModel(
-         usernameSource: usernameField.rx.text.asObservable(),
-         passwordSource: passwordField.rx.text.asObservable(),
-         loginActionSource: loginButton.rx.tap.asObservable()
-      )
+      loginModel.delegate = self
+
+      didChangeLoginEnabled(model: loginModel)
+      didChangeLoginMessage(model: loginModel)
+      didChangeLoginInProgress(model: loginModel)
+      didChangeLoginResult(model: loginModel)
+   }
+   
+   // from model to view
+   
+   func didChangeLoginEnabled(model: LoginModel) {
+      loginButton.isEnabled = model.latestLoginEnabled
+   }
+   
+   func didChangeLoginMessage(model: LoginModel) {
+      didLoginMessageField.text = model.latestLoginMessage
+   }
+   
+   func didChangeLoginInProgress(model: LoginModel) {
+      usernameField.isEnabled = !model.loginInProgress
+      passwordField.isEnabled = !model.loginInProgress
       
-      let disposeBag = loginModel.disposeBag
-      
-      // loginButton.isEnabled
-      loginModel.isLoginEnabled
-         .drive(loginButton.rx.isEnabled)
-         .disposed(by: disposeBag)
-
-      // didLoginMessageField.text
-      loginModel.didLoginMessage
-         .drive(didLoginMessageField.rx.text)
-         .disposed(by: disposeBag)
-
-      // spinner.isAnimating
-      loginModel.isLoginInProgress
-         .drive(spinner.rx.isAnimating)
-         .disposed(by: disposeBag)
-      
-      // usernameField.isEnabled
-      loginModel.isLoginNotInProgress
-         .drive(usernameField.rx.isEnabled)
-         .disposed(by: disposeBag)
-
-      // passwordField.isEnabled
-      loginModel.isLoginNotInProgress
-         .drive(passwordField.rx.isEnabled)
-         .disposed(by: disposeBag)
-
-      // tap action, bind is enough because tap is a ControlEvent
-      closeButton.rx.tap
-         .bind(
-            onNext: { [unowned self] in
-               self.dismiss(animated: true, completion: nil)
-         })
-         .disposed(by: disposeBag)
+      if model.loginInProgress {
+         spinner.startAnimating()
+      }
+      else {
+         spinner.stopAnimating()
+      }
+   }
+   
+   func didChangeLoginResult(model: LoginModel) {
+      if loginModel.loginResult.isSuccess {
+         usernameField.isEnabled = false
+         passwordField.isEnabled = false
+         loginButton.isEnabled = false
+         
+         delegate?.didLogin(controller: self, loginToken: loginModel.loginToken)
+      }
+   }
+   
+   // from view to model
+   
+   @IBAction func updateUsername(sender: UITextField) {
+      loginModel.username = sender.text ?? ""
+   }
+   
+   @IBAction func updatePassword(sender: UITextField) {
+      loginModel.password = sender.text ?? ""
+   }
+   
+   @IBAction func startLogin(sender: UIButton) {
+      loginModel.startLogin()
+   }
+   
+   @IBAction func close(sender: UIButton) {
+      delegate?.close(controller: self)
    }
 }

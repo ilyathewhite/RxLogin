@@ -7,12 +7,34 @@
 //
 
 import Foundation
-import RxSwift
-import RxCocoa
 
 enum Result<T> {
    case success(T)
    case error(Error)
+   
+   var isSuccess: Bool {
+      switch self {
+      case .success: return true
+      case .error: return false
+      }
+   }
+}
+
+extension Result where T: Equatable {
+   static func ==(lhs: Result<T>, rhs: Result<T>) -> Bool {
+      switch (lhs, rhs) {
+      case let (.success(val1), .success(val2)):
+         return val1 == val2
+      case let (.error(err1), .error(err2)):
+         return err1.localizedDescription == err2.localizedDescription
+      default:
+         return false
+      }
+   }
+   
+   static func !=(lhs: Result<T>, hrs: Result<T>) -> Bool {
+      return !(lhs == hrs)
+   }
 }
 
 enum AuthenticationError: Error {
@@ -40,135 +62,124 @@ private func loginFunc(username: String, password: String, completion: @escaping
    }
 }
 
-// The model for the login screen
+protocol LoginModelDelegate: class {
+   func didChangeLoginEnabled(model: LoginModel)
+   func didChangeLoginMessage(model: LoginModel)
+   func didChangeLoginInProgress(model: LoginModel)
+   func didChangeLoginResult(model: LoginModel)
+}
+
 class LoginModel {
-   /// The dispose bag for the login screen
-   public var disposeBag = DisposeBag()
+   init() {
+      updateLatestState()
+   }
+   
+   weak var delegate: LoginModelDelegate?
 
-   /// Whether the user can try to login with the information entered on the screen.
-   public var isLoginEnabled: Driver<Bool>
+   private(set) var latestLoginEnabled = true {
+      didSet {
+         guard latestLoginEnabled != oldValue else { return }
+         delegate?.didChangeLoginEnabled(model: self)
+      }
+   }
    
-   /// The signal that emits a result after every login attempt. If the login is successful,
-   /// the result contains the login token. If not, it contains the login error.
-   public var didLogin: Driver<Result<String>>
+   private(set) var latestLoginMessage = " " {
+      didSet {
+         guard latestLoginMessage != oldValue else { return }
+         delegate?.didChangeLoginMessage(model: self)
+      }
+   }
    
-   /// The signal that emits a new login message after every login attempt.
-   public var didLoginMessage: Driver<String>
+   private(set) var latestLoginInProgress = false {
+      didSet {
+         guard latestLoginInProgress != oldValue else { return }
+         delegate?.didChangeLoginInProgress(model: self)
+      }
+   }
    
-   /// After the user logs in, emits the login token and then completes. If the user
-   /// never logs in, this signal does not emit eny values.
-   public var didFinishLogin: Driver<String>
+   private(set) var latestLoginResult: Result<String> = .error(AuthenticationError.authentication) {
+      didSet {
+         guard latestLoginResult != oldValue else { return }
+         delegate?.didChangeLoginResult(model: self)
+      }
+   }
    
-   /// The signal that emits a new value every time login starts and ends.
-   public var isLoginInProgress: Driver<Bool>
+   private func updateLatestState() {
+      latestLoginEnabled = loginEnabled
+      latestLoginMessage = loginMessage
+      latestLoginInProgress = loginInProgress
+      latestLoginResult = loginResult
+   }
    
-   /// The opposite of isLoginInProgress
-   public var isLoginNotInProgress: Driver<Bool>
+   private var didChangeUsernameOrPassword = false
    
-   /// Creates the login model from the username, password, and login action sources
-   /// The sources are likely 2 text fields and a button, but they can be any observables (for testing)
-   init(usernameSource: Observable<String?>,
-        passwordSource: Observable<String?>,
-        loginActionSource: Observable<Void>) {
-      
-      let username = usernameSource.map { $0 ?? "" }.distinctUntilChanged()
-      let password = passwordSource.map { $0 ?? "" }.distinctUntilChanged()
-      
-      // isValidUsername and isValidPassword simply check the the user provided input
-      // If this was a model to create an account, these derived signals would contain
-      // the actual rules for username and password validateion.
-
-      let isValidUsername = username
-         .map { !$0.isEmpty }
-         .asDriver(onErrorJustReturn: false)
-
-      let isValidPassword = password
-         .map { !$0.isEmpty }
-         .asDriver(onErrorJustReturn: false)
-      
-      // emits a new username / password tupple whenever one of the sources has a new value
-      let usernameAndPassword = Observable
-         .combineLatest(username, password) { ($0, $1) }
-      
-      // emits the result of every attempt to log in. If successful, the result contains the
-      // login token. If not, it contains the login error. Since the login response comes back
-      // on a secondary thread, this signal cannot be used for model output directly. Since
-      // the stream of new username / password values is infinite, this stream does not complete
-      // after a sucsseful login.
-      let rawDidLogin: Observable<Result<String>> = loginActionSource
-         .withLatestFrom(usernameAndPassword)
-         .flatMap { (username, password) in
-            Observable.create { subscriber in
-               loginFunc(username: username, password: password) { result in
-                  subscriber.on(.next(result))
-               }
-               return Disposables.create()
-            }
+   var username = "" {
+      didSet {
+         guard username != oldValue else { return }
+         didChangeUsernameOrPassword = true
+         updateLatestState()
+      }
+   }
+   
+   var password = "" {
+      didSet {
+         guard password != oldValue else { return }
+         didChangeUsernameOrPassword = true
+         updateLatestState()
+      }
+   }
+   
+   private(set) var loginInProgress = false {
+      didSet {
+         guard loginInProgress != oldValue else { return }
+         updateLatestState()
+      }
+   }
+   
+   private(set) var loginResult: Result<String> = .error(AuthenticationError.authentication) {
+      didSet {
+         // always a new value from the service, no guard needed
+         // resets the start point for form user input because the user could try a different
+         // username and password after this point
+         didChangeUsernameOrPassword = false
+         updateLatestState()
+      }
+   }
+   
+   var loginToken: String {
+      switch loginResult {
+      case .success(let token):
+         return token
+      case .error:
+         return ""
+      }
+   }
+   
+   func startLogin() {
+      loginInProgress = true
+      loginFunc(username: username, password: password) { result in
+         DispatchQueue.main.async { [weak self] in
+            guard let me = self else { return }
+            me.loginInProgress = false
+            me.loginResult = result
          }
-         .startWith(.error(AuthenticationError.authentication))
-      
-      didLogin = rawDidLogin
-         .asDriver(onErrorJustReturn: .error(AuthenticationError.service))
-      
-      didFinishLogin = rawDidLogin
-         .single { result in // collapses didFinishLogin to a single value (the successful login result)
-            if case .success = result {
-               return true
-            }
-            else {
-               return false
-            }
-         }
-         .map { result in // transforms the successful result to the login token
-            switch result {
-            case .success(let token):
-               return token
-            default:
-               return ""
-            }
-         }
-         .take(1) // important to emit the .completed event
-         .asDriver(onErrorJustReturn: "")
-      
-      isLoginInProgress = Driver
-         .merge(
-            loginActionSource.asDriver(onErrorJustReturn: ()).map { _ in true },
-            didLogin.map { _ in false }
-         )
-         .startWith(false)
-      
-      isLoginNotInProgress = isLoginInProgress.map { !$0 }
-      
-      isLoginEnabled = Driver
-         .combineLatest(isValidUsername, isValidPassword, isLoginInProgress, didLogin) {
-            isValidUsername, isValidPassword, loggingIn, didLogin in
-            if case .success = didLogin { return false }
-            if loggingIn { return false }
-            return isValidUsername && isValidPassword
+      }
+   }
+   
+   private var loginEnabled: Bool {
+      return !username.isEmpty && !password.isEmpty && !loginInProgress && !loginResult.isSuccess
+   }
+   
+   private var loginMessage: String {
+      if username.isEmpty || password.isEmpty || loginInProgress || didChangeUsernameOrPassword {
+         return " "
       }
       
-      // transforms the diLogin signal into the message for each login
-      let didLoginResultMessage = didLogin
-         .map({ (result) -> String in
-            switch result {
-            case .success:
-               return "Succeeded!"
-            case .error(let error):
-               return (error as! AuthenticationError).description
-            }
-         })
-
-      // emits a new login message whenever
-      // - there is result from login
-      // - the user starts log in
-      // - the user changes the username or password
-      let emptyLabelValue = " " // use " " instead of "" to avoid unwanted layout changes
-      didLoginMessage = Driver
-         .merge(
-            didLoginResultMessage,
-            loginActionSource.asDriver(onErrorJustReturn: ()).map { _ in emptyLabelValue },
-            usernameAndPassword.asDriver(onErrorJustReturn: ("", "")).map { _ in emptyLabelValue }
-         )
-         .startWith(" ")
+      switch loginResult {
+      case .success:
+         return "Succeeded!"
+      case .error:
+         return "Invalid username / password"
+      }
    }
 }

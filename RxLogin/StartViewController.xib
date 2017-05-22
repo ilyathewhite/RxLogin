@@ -34,6 +34,9 @@
                             <rect key="frame" x="46" y="45.5" width="45" height="38"/>
                             <fontDescription key="fontDescription" type="system" pointSize="21"/>
                             <state key="normal" title="Start"/>
+                            <connections>
+                                <action selector="startLoginWithSender:" destination="-1" eventType="touchUpInside" id="fte-FY-GVv"/>
+                            </connections>
                         </button>
                     </subviews>
                 </stackView>
