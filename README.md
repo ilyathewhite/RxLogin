@@ -1,9 +1,10 @@
-# RxLogin, a simulation of a login form with RxSwift
+# NoRxLogin, a simulation of a login form without RxSwift
 
-Gives an example of using rxSwift and rxCocoa in an iOS app. Some highlights:
+Implements the same functionality as RxLogin, but without RxSwift. Some highlights:
 
-- the code is very declarative
-- the model captures all the app logic
-- the controller code is very simple and short. All of the complexity is in the model.
-- unification of target / action, delegate, and completion / callback patterns
-- much less code, built with generic building blocks 
+- the model code is much more imperative. There are some calculated properties, but they need to be called manually to update the model. 
+- didSet clauses simulate some of the reactive version logic, but they require much more boilerplate code and increase a chance for bugs
+- some of the app logic is moved into controller
+- the controller code is more verbose and less clear about how controls interact with the model
+- delegates require a lot of boilerplate code, make the code harder to follow and increase a chance for bugs
+- the common patterns are easy to read (didSet, delegates), but their expression requires much more custom code than the reactive version which heavily uses standard building blocks to express patterns.
