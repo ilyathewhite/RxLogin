@@ -16,6 +16,7 @@
 		098D7BD81ECD40DA005726BB /* LoginViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 098D7BD71ECD40DA005726BB /* LoginViewController.xib */; };
 		098D7BF01ECD4224005726BB /* StartViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098D7BEE1ECD4224005726BB /* StartViewController.swift */; };
 		098D7BF11ECD4224005726BB /* StartViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 098D7BEF1ECD4224005726BB /* StartViewController.xib */; };
+		099908F21ED45F840074AC7D /* Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 099908F11ED45F840074AC7D /* Utilities.swift */; };
 		0A0EFA1175539CACC90A872F /* Pods_RxLogin.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0634C07A8A89198B269A4018 /* Pods_RxLogin.framework */; };
 /* End PBXBuildFile section */
 
@@ -45,6 +46,7 @@
 		098D7BD71ECD40DA005726BB /* LoginViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = LoginViewController.xib; sourceTree = "<group>"; };
 		098D7BEE1ECD4224005726BB /* StartViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StartViewController.swift; sourceTree = "<group>"; };
 		098D7BEF1ECD4224005726BB /* StartViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = StartViewController.xib; sourceTree = "<group>"; };
+		099908F11ED45F840074AC7D /* Utilities.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Utilities.swift; sourceTree = "<group>"; };
 		700AA326E36958EA5B2F7FE6 /* Pods-RxLogin.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RxLogin.debug.xcconfig"; path = "Pods/Target Support Files/Pods-RxLogin/Pods-RxLogin.debug.xcconfig"; sourceTree = "<group>"; };
 		83CEB80D3BB2A3F6B05546F9 /* Pods-RxLogin.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RxLogin.release.xcconfig"; path = "Pods/Target Support Files/Pods-RxLogin/Pods-RxLogin.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -104,6 +106,7 @@
 			children = (
 				097955391ECE8E9A00F1C21F /* Start */,
 				0979553A1ECE8EA200F1C21F /* Login */,
+				099908F11ED45F840074AC7D /* Utilities.swift */,
 				0979B8FF1ECBE21900CD7B52 /* AppDelegate.swift */,
 				0979B9061ECBE21900CD7B52 /* Assets.xcassets */,
 				0979B9081ECBE21900CD7B52 /* LaunchScreen.storyboard */,
@@ -255,6 +258,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				099908F21ED45F840074AC7D /* Utilities.swift in Sources */,
 				0979B9021ECBE21900CD7B52 /* LoginViewController.swift in Sources */,
 				098D7BF01ECD4224005726BB /* StartViewController.swift in Sources */,
 				095492951ECBE2C70066E9BA /* LoginModel.swift in Sources */,

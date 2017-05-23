@@ -10,11 +10,6 @@ import Foundation
 import RxSwift
 import RxCocoa
 
-enum Result<T> {
-   case success(T)
-   case error(Error)
-}
-
 enum AuthenticationError: Error {
    case service
    case authentication
@@ -111,23 +106,8 @@ class LoginModel {
          .asDriver(onErrorJustReturn: .error(AuthenticationError.service))
       
       didFinishLogin = rawDidLogin
-         .single { result in // collapses didFinishLogin to a single value (the successful login result)
-            if case .success = result {
-               return true
-            }
-            else {
-               return false
-            }
-         }
-         .map { result in // transforms the successful result to the login token
-            switch result {
-            case .success(let token):
-               return token
-            default:
-               return ""
-            }
-         }
-         .take(1) // important to emit the .completed event
+         .takeFirst { $0.isSuccess }
+         .map { $0.wrapped(or: "") }
          .asDriver(onErrorJustReturn: "")
       
       isLoginInProgress = Driver
