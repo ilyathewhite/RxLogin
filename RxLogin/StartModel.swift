@@ -31,7 +31,7 @@ class StartModel {
       loginToken.value = nil
       
       loginModel.didFinishLogin
-         .drive(
+         .bind(
             onNext: { [weak self] token in
                guard let me = self else { return }
                me.loginToken.value = token

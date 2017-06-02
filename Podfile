@@ -6,7 +6,12 @@ target 'RxLogin' do
   use_frameworks!
 
   # Pods for RxLogin
-    pod 'RxSwift',    '~> 3.4.1'
-    pod 'RxCocoa',    '~> 3.4.1'
-
+    pod 'RxSwift'
+    pod 'RxCocoa'
+    
+    target 'RxLoginTests' do
+       inherit! :search_paths
+       pod 'RxTest'
+       pod 'RxBlocking'
+    end
 end

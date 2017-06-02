@@ -47,12 +47,12 @@ class LoginViewController: UIViewController {
          .disposed(by: disposeBag)
       
       // usernameField.isEnabled
-      loginModel.isLoginNotInProgress
+      loginModel.isNotLoginInProgressOrDone
          .drive(usernameField.rx.isEnabled)
          .disposed(by: disposeBag)
 
       // passwordField.isEnabled
-      loginModel.isLoginNotInProgress
+      loginModel.isNotLoginInProgressOrDone
          .drive(passwordField.rx.isEnabled)
          .disposed(by: disposeBag)
 
